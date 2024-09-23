@@ -1,0 +1,55 @@
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+}
+
+h1 {
+  text-align: center;
+  padding: 20px 0;
+}
+
+#controls {
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+#radius-input {
+  width: 100px;
+  padding: 5px;
+  font-size: 16px;
+}
+
+#map {
+  height: 600px;
+}
+
+#result {
+  padding: 20px;
+}
+
+#area-list {
+  list-style-type: none;
+  padding: 0;
+}
+
+#area-list li {
+  margin-bottom: 5px;
+  font-size: 18px;
+}
+#area-list h3 {
+  margin-top: 20px;
+  font-size: 18px;
+  color: #333;
+}
+
+#area-list ul {
+  list-style-type: none;
+  padding-left: 0;
+}
+
+#area-list li {
+  margin-bottom: 10px;
+  font-size: 16px;
+  border-bottom: 1px solid #ddd;
+  padding: 5px 0;
+}

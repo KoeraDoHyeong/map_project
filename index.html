@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>행정구역 검색 지도</title>
+  <link rel="stylesheet" href="style.css" />
+  <!-- Leaflet CSS -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet/dist/leaflet.css"
+  />
+</head>
+<body>
+  <h1>행정구역 검색 지도</h1>
+  <!-- 반경 입력 필드 -->
+  <div id="controls">
+    <label for="radius-input">반경 (미터): </label>
+    <input type="number" id="radius-input" value="1000" />
+  </div>
+  <!-- 지도 영역 -->
+  <div id="map"></div>
+  <!-- 결과를 출력할 영역 -->
+  <div id="result">
+    <h2>범위 내 검색 결과</h2>
+    <div id="area-list"></div> <!-- 결과가 이곳에 출력됩니다 -->
+  </div>    
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <!-- Turf.js -->
+  <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
+  <!-- 사용자 정의 JS -->
+  <script src="script.js"></script>
+  <!-- Rbush JS -->
+  <script src="https://unpkg.com/rbush@2.0.2/rbush.min.js"></script>
+
+</body>
+</html>
