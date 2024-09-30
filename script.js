@@ -266,8 +266,6 @@ function performSpatialQuery(clickedPoint, radius) {
   highlightIntersectingAreas(insideAreas);
 }
 
-
-
 // 행정구역 출력 시 구와 동 정보만 출력
 function displayResults(areaNames, stationNames) {
   var areaList = document.getElementById('area-list');
@@ -298,8 +296,6 @@ function displayResults(areaNames, stationNames) {
   areaList.innerHTML = resultHTML;
 }
 
-
-
 // 강조 표시 함수 (행정구역만 강조)
 function highlightIntersectingAreas(areaNames) {
   var highlightFeatures = adminAreas.features.filter(function (feature) {
@@ -321,3 +317,161 @@ function highlightIntersectingAreas(areaNames) {
     }
   ).addTo(map);
 }
+
+// 병원 분과와 관련된 키워드 구조화
+const departmentKeywords = {
+  "항문외과": ["항문외과", "항외과", "치질병원", "치질수술병원", "치질수술잘하는곳", "내시경병원"],
+  "내과": ["내과", "소화기내과", "호흡기내과", "심장내과", "내시경 병원", "건강검진 병원", "건강검진", "대장내시경 병원", "위내시경 병원"],
+  "정형외과": ["정형외과", "디스크병원", "허리디스크병원", "목디스크병원", "재활병원", "관절", "골절", "디스크"],
+  "신경외과": ["신경외과", "두통", "뇌출혈", "허리디스크"],
+  "산부인과": ["산부인과", "부인과", "출산", "여성클리닉", "자궁경부암 건강검진"],
+  "소아청소년과": ["소아청소년과", "소아과", "아이", "소아질환"],
+  "피부과": ["피부과", "여드름", "리프팅", "피부질환"],
+  "안과": ["안과", "백내장", "라식", "눈수술"],
+  "이비인후과": ["이비인후과", "비염", "코막힘", "목감기"],
+  "비뇨의학과": ["비뇨의학과", "비뇨기과", "전립선", "요로결석"],
+  "재활의학과": ["재활의학과", "물리치료", "재활치료", "운동치료"],
+  "정신건강의학과": ["정신건강의학과", "우울증", "불안장애", "정신과"],
+  "가정의학과": ["가정의학과", "건강검진", "다이어트", "비만클리닉"],
+  "흉부외과": ["흉부외과", "심장수술", "폐질환", "대동맥수술"],
+  "치과": ["치과", "임플란트", "교정", "치아미백"]
+  "성형외과": ["성형외과", "쌍꺼풀수술", "코수술"]
+  "마취통증의학과": ["통증의원", "통증의학과", "마취통증의학과", "통증과", "디스크병원", "허리디스크병원", "목디스크병원", "디스크"]
+};
+
+// 키워드 저장 변수
+let keywords = [];
+
+
+
+// 동 이름을 통일하는 함수 ("동" 앞에 숫자가 있을 경우 처리)
+function normalizeDongName(dongName) {
+  // "동" 직전에 숫자가 있는 경우 숫자를 제거 (장위1동 -> 장위동)
+  return dongName.replace(/(\d+)(?=동$)/, '');
+}
+
+// "구"를 제외하고 "동"만 반환하는 함수 (키워드 생성 시 사용)
+function extractDongOnly(areaName) {
+  return areaName.replace(/.*구\s?/, '').trim(); // "구"를 제거하고 "동"만 반환
+}
+
+// 동 이름을 통일하는 함수 ("동" 앞에 숫자가 있을 경우 처리)
+function normalizeDongName(dongName) {
+  // "동" 직전에 숫자가 있는 경우 숫자를 제거 (장위1동 -> 장위동)
+  return dongName.replace(/(\d+)(?=동$)/, '');
+}
+
+// "구"를 제외하고 "동"만 반환하는 함수 (키워드 생성 시 사용)
+function extractDongOnly(areaName) {
+  return areaName.replace(/.*구\s?/, '').trim(); // "구"를 제거하고 "동"만 반환
+}
+
+// 지도 클릭 이벤트 처리 (키워드 생성 및 출력)
+map.on('click', function (e) {
+  var clickedPoint = e.latlng;
+  var radius = parseInt(document.getElementById('radius-input').value) || 1000;
+
+  // 선택된 병원 분과 가져오기
+  var selectedDepartment = document.getElementById('department-select').value;
+  if (!selectedDepartment) {
+    alert('먼저 병원 분과를 선택하세요!');
+    return;
+  }
+
+  // 선택된 분과에 해당하는 하위 키워드 가져오기
+  var relatedKeywords = departmentKeywords[selectedDepartment];
+  if (!relatedKeywords) {
+    alert('선택된 분과에 대한 키워드가 없습니다.');
+    return;
+  }
+
+  // 1. 행정구역(동) 정보 가져오기 (구 단위 제거 및 통합)
+  var insideAreasSet = new Set(); // Set을 사용해 중복 제거
+  adminAreasTree.search({
+    minX: clickedPoint.lng - radius / 111320,
+    minY: clickedPoint.lat - radius / 110540,
+    maxX: clickedPoint.lng + radius / 111320,
+    maxY: clickedPoint.lat + radius / 110540
+  }).forEach(function (item) {
+    let areaName = item.feature.properties.adm_nm.replace('서울특별시 ', '').trim();
+    
+    // 동 이름 통일 (숫자 앞에 동이 있으면 통일)
+    areaName = normalizeDongName(areaName);
+
+    // "구"와 "동"이 포함된 이름만 처리하고 중복을 Set으로 방지
+    if (areaName.includes('구') && areaName.includes('동')) {
+      insideAreasSet.add(areaName); // 중복 없이 Set에 추가
+    }
+  });
+
+  // 2. 지하철역 정보 가져오기
+  var insideStations = new Set();
+  subwayStationsTree.search({
+    minX: clickedPoint.lng - radius / 111320,
+    minY: clickedPoint.lat - radius / 110540,
+    maxX: clickedPoint.lng + radius / 111320,
+    maxY: clickedPoint.lat + radius / 110540
+  }).forEach(function (item) {
+    const stationName = item.feature.properties.name + '역'; // "역"을 추가
+    insideStations.add(stationName);
+  });
+
+  // 키워드 생성 로직
+  keywords = []; // 기존 키워드를 초기화
+  
+  // 동 이름과 분과 관련 키워드를 조합 (구는 제외하고 동만 사용)
+  Array.from(insideAreasSet).forEach(function(area) {
+    const dongOnly = extractDongOnly(area); // 구를 제외하고 동만 추출
+    relatedKeywords.forEach(function(keyword) {
+      keywords.push(`${dongOnly} ${keyword}`);
+    });
+  });
+
+  // 지하철역 이름과 분과 관련 키워드를 조합
+  Array.from(insideStations).forEach(function(station) {
+    relatedKeywords.forEach(function(keyword) {
+      keywords.push(`${station} ${keyword}`);
+    });
+  });
+
+  // 생성된 키워드를 화면에 표시 (가로로 나열)
+  var keywordListElement = document.getElementById('keyword-list');
+  keywordListElement.innerHTML = ''; // 기존 내용 초기화
+
+  if (keywords.length > 0) {
+    keywords.forEach(function(keyword) {
+      var keywordItem = document.createElement('span'); // span을 사용해 가로로 나열
+      keywordItem.textContent = keyword + ', '; // 각 키워드 뒤에 쉼표 추가
+      keywordListElement.appendChild(keywordItem);
+    });
+  } else {
+    console.log("키워드가 생성되지 않음.");
+  }
+
+  console.log('생성된 키워드:', keywords);
+});
+
+
+
+// 키워드 다운로드 기능
+document.getElementById('download-btn').addEventListener('click', function() {
+  if (keywords.length === 0) {
+    alert('생성된 키워드가 없습니다.');
+    return;
+  }
+
+  // 키워드를 텍스트 파일로 변환
+  var blob = new Blob([keywords.join('\n')], { type: 'text/plain' });
+  var url = window.URL.createObjectURL(blob);
+
+  // 다운로드 링크 생성 및 확인
+  console.log('생성된 다운로드 URL:', url);
+
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = 'generated_keywords.txt';
+  a.click(); // 다운로드 실행
+
+  // URL 해제
+  window.URL.revokeObjectURL(url);
+});
